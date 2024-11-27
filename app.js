@@ -1,9 +1,14 @@
 const soap = require('soap');
 const http = require('http');
 
-// Dados em memória
+// Dados em memória com usuários fictícios
 const data = {
-  usuarios: [],
+  usuarios: [
+    { id: 1, nome: 'João Silva', email: 'joao.silva@example.com' },
+    { id: 2, nome: 'Maria Oliveira', email: 'maria.oliveira@example.com' },
+    { id: 3, nome: 'Carlos Souza', email: 'carlos.souza@example.com' },
+    { id: 4, nome: 'Ana Pereira', email: 'ana.pereira@example.com' },
+  ],
   musicas: [],
   playlists: [],
 };
@@ -13,12 +18,24 @@ const musicService = {
   MusicService: {
     MusicServiceSoap: {
       // Listar usuários
-      listarUsuarios: function (_, callback) {
+      listarUsuarios: function (args, callback) {
+        console.log("Função listarUsuarios foi chamada!");
+        console.log("Dados dos usuários:", data.usuarios);
+      
+        // Verifica se há usuários
+        if (data.usuarios.length === 0) {
+          console.log("Nenhum usuário encontrado!");
+          callback(null, { usuarios: [] });
+          return;
+        }
+      
+        // Responde com os dados dos usuários
         callback(null, { usuarios: data.usuarios });
       },
 
       // Listar músicas
       listarMusicas: function (_, callback) {
+        console.log("listarMusicas foi chamado!");
         callback(null, { musicas: data.musicas });
       },
 
@@ -57,34 +74,51 @@ const musicService = {
 // Definição do WSDL como string
 const wsdl = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions name="MusicService"
-  targetNamespace="http://www.example.org/MusicService/"
-  xmlns:tns="http://www.example.org/MusicService/"
+  targetNamespace="http://localhost:8000/musicService"
+  xmlns:tns="http://localhost:8000/musicService"
   xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
   xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
   <!-- Esquema XML -->
-  <types>
-    <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.example.org/MusicService/">
-      <xs:element name="listarUsuariosRequest"/>
-      <xs:element name="listarUsuariosResponse">
-        <xs:complexType>
-          <xs:sequence>
-            <xs:element name="usuarios" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
-          </xs:sequence>
-        </xs:complexType>
-      </xs:element>
+ <types>
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://localhost:8000/musicService">
+    <!-- Solicitação para listar usuários -->
+    <xs:element name="listarUsuariosRequest"/>
 
-      <xs:element name="listarMusicasRequest"/>
-      <xs:element name="listarMusicasResponse">
-        <xs:complexType>
-          <xs:sequence>
-            <xs:element name="musicas" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
-          </xs:sequence>
-        </xs:complexType>
-      </xs:element>
-    </xs:schema>
-  </types>
+    <!-- Resposta para listar usuários -->
+    <xs:element name="listarUsuariosResponse">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="usuarios">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="usuario" minOccurs="0" maxOccurs="unbounded">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="id" type="xs:int"/>
+                      <xs:element name="nome" type="xs:string"/>
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+
+    <!-- Solicitação para listar músicas -->
+    <xs:element name="listarMusicasRequest"/>
+    <xs:element name="listarMusicasResponse">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="musicas" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+</types>
 
   <!-- Mensagens -->
   <message name="listarUsuariosRequest"/>
@@ -100,9 +134,11 @@ const wsdl = `<?xml version="1.0" encoding="UTF-8"?>
   <!-- Port Type -->
   <portType name="MusicServicePortType">
     <operation name="listarUsuarios">
-      <input message="tns:listarUsuariosRequest"/>
-      <output message="tns:listarUsuariosResponse"/>
-    </operation>
+  <soap:operation soapAction="listarUsuarios"/>
+  <input message="tns:listarUsuariosRequest"/>
+  <output message="tns:listarUsuariosResponse"/>
+</operation>
+
     <operation name="listarMusicas">
       <input message="tns:listarMusicasRequest"/>
       <output message="tns:listarMusicasResponse"/>
@@ -131,7 +167,6 @@ const wsdl = `<?xml version="1.0" encoding="UTF-8"?>
     </port>
   </service>
 </definitions>
-
 `;
 
 // Servidor HTTP
@@ -142,9 +177,12 @@ const server = http.createServer((req, res) => {
 // Inicializar o servidor SOAP
 soap.listen(server, '/musicService', musicService, wsdl);
 
-// Porta de escuta
 server.listen(8000, () => {
-    console.log('SOAP server listening on http://localhost:8000/musicService');
-    console.log('WSDL available at http://localhost:8000/musicService?wsdl');
-  });
-  
+  console.log('SOAP server listening on http://localhost:8000/musicService');
+  console.log('WSDL available at http://localhost:8000/musicService?wsdl');
+});
+
+// Log de quando o servidor recebe requisições
+server.on('request', (req) => {
+  console.log('Recebendo uma requisição SOAP...');
+});
