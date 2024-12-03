@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.raw({ type: () => true, limit: '5mb' }));
 
-// Base de dados fictícia
+
 const database = {
   usuarios: [
     { id: 1, nome: 'Alice', idade: 25 },
@@ -20,16 +20,17 @@ const database = {
       id: 1,
       nome: 'Playlist 1',
       usuarioId: 1,
-      musicas: [1, 2],
+      musicas: [1, 2], 
     },
     {
       id: 2,
       nome: 'Playlist 2',
       usuarioId: 2,
-      musicas: [1],
+      musicas: [1], 
     },
   ],
 };
+
 
 // Funções do serviço
 const service = {
